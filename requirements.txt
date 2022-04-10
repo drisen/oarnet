@@ -1,0 +1,6 @@
+requests>=2.27
+-e ..\\credentials
+-e ..\\cpiapi
+pytz>=2022.1
+-e ..\\loom         # in -e cpiapi
+urllib3>=1.26      # in -e cpiapi

@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: oarnet
+Version: 2.0
+Summary: "applicaton to real-time poll the OARnet statistics."
+Home-page: https://github.com/drisen/oarnet
+Author: "Dennis Risen"
+Author-email: "dar5@case.edu"
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/drisen/oarnet/issues
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: Licence :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# oarnet Package
+
+**oarnet.py** applicaton to real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
+a historical record of traffic at each of the selected interfaces. 
+email significant dropped traffic via email.
+
+
+

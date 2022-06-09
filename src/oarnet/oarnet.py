@@ -2,10 +2,12 @@
 # coding=utf-8
 
 import csv
+from datetime import datetime
 import json
 from argparse import ArgumentParser
 import os.path
 import platform
+from pytz import timezone
 import requests
 import statistics
 import sys
@@ -13,6 +15,7 @@ from time import sleep, time
 from typing import Union
 from credentials import credentials
 import cpiapi
+
 
 """
 Real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
@@ -39,6 +42,15 @@ hist = {}			        # {service:{attr:{weekMinute:[oldestVal, ..., newestVal]}}}
 histFile = {} 			    # {service:csv_file, ...}
 histReader = {} 		    # {service:csvReader, ...}
 fmt = '%c'					# output date format
+home_zone = timezone('US/Eastern')
+
+
+def strftime(t: float, fmt: str = '%c') -> str:
+    return datetime.fromtimestamp(t, home_zone).strftime(fmt)
+
+
+def strptime(date_str: str, fmt: str = '%c') -> float:
+    return home_zone.localize(datetime.strptime(date_str, fmt)).timestamp()
 
 
 def diag_str(r: requests.Response) -> str:
@@ -77,7 +89,7 @@ def file_stats(devices: list, member: str, service: str, time_frame: int,
     rec_cnt = 0						# max # records to return, or 0 for all
     result = {}					# build result here
     for rec in histReader[service]:
-        rec[epoch] = cpiapi.strpTime(rec[0], '%c')  # date text --> epoch seconds
+        rec[epoch] = strptime(rec[0])  # date text --> epoch seconds
         for i in range(1, len(rec)):  # for each data value
             x = float(rec[i])		# convert string to float ...
             if x == int(x):
@@ -254,8 +266,8 @@ if not args.devices:
 if not args.emails:
     args.emails = ['user@machineDomain']
 print(f"logErr(...) will send email to {args.emails}")
-cpiapi.logErr.subject = 'Oarnet statistics'
-cpiapi.logErr.toAddrs = args.emails
+cpiapi.logErr.logSubject = 'Oarnet statistics'
+cpiapi.logErr.logToAddr = args.emails
 if not args.services:
     args.services = ['CONTENT', 'INTERNET', 'I2', 'ONNET']
 for service in args.services:
@@ -304,7 +316,7 @@ for service in args.services: 		    # for each service
                     break				# only read the header, and leave file open
                 continue
             try:
-                recX = cpiapi.strpTime(rec[epoch], '%c')
+                recX = strptime(rec[epoch], '%c')
             except ValueError:
                 cpiapi.logErr(f"Bad date {rec[epoch]} in {file_name} record={rec}. Record ignored.")
                 continue
@@ -315,7 +327,7 @@ for service in args.services: 		    # for each service
         else:							# have read the entire file
             csv_file.close()
             cpiapi.printIf(args.verbose, f"Maximum date in {file_name} is "
-                    + f"{prevMax[service]}={cpiapi.strfTime(prevMax[service], fmt)}")
+                    + f"{prevMax[service]}={strftime(prevMax[service], fmt)}")
         # if options.history, the file is left open after the header for later reading
     except FileNotFoundError:
         histFile[service] = None 		# indicate at EOF
@@ -381,10 +393,10 @@ while not allEOF:
         for rec in recs:
             if int((rec[epoch]-prevMax[service]+30)/60) != int(args.sampling/60) \
                     and prevMax[service] > 0:
-                alerts += f"{cpiapi.strfTime(rec[epoch], fmt)} {service:9} missing"\
-                    + f" sample(s) since {cpiapi.strfTime(prevMax[service], fmt)}\n"
+                alerts += f"{strftime(rec[epoch], fmt)} {service:9} missing"\
+                    + f" sample(s) since {strftime(prevMax[service], fmt)}\n"
             prevMax[service] = max(prevMax[service], rec[epoch])
-            prefix = f"{cpiapi.strfTime(rec[epoch], fmt)} {service:9}"
+            prefix = f"{strftime(rec[epoch], fmt)} {service:9}"
             try:
                 s = ''
                 # Documented as Burst - Drops, but data matches Drops - Burst
@@ -401,7 +413,7 @@ while not allEOF:
                         if c is not None:  # discontinuity in attribute values?
                             totBytesDropped = 100000000000 	# Force output of warning
                             alerts += prefix + f"{attr}={c[0]:+6.1F}=[" + ', '.join(c[1]) + ']\n'
-                rec[epoch] = cpiapi.strfTime(rec[epoch], fmt)  # convert epoch to date string
+                rec[epoch] = strftime(rec[epoch], fmt)  # convert epoch to date string
                 csvWriter.writerow(rec)  # append new record to output file
             except Exception:	    	# any error while processing the record
                 alerts += f"error processing record {rec}. Record ignored"

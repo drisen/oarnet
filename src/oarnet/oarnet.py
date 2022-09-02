@@ -1,5 +1,12 @@
 #! /usr/bin/python3
 # coding=utf-8
+# oarnet.py Copyright 2019 Dennis Risen, Case Western Reserve University
+#
+"""
+Real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
+a historical record of traffic at each of the selected interfaces.
+email significant dropped traffic via email.
+"""
 
 import csv
 from datetime import datetime
@@ -15,13 +22,6 @@ from time import sleep, time
 from typing import Union
 from credentials import credentials
 import cpiapi
-
-
-"""
-Real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
-a historical record of traffic at each of the selected interfaces. 
-email significant dropped traffic via email.
-"""
 
 # Column index of each series in a record
 epoch = 0					# time in epoch seconds
@@ -46,10 +46,22 @@ home_zone = timezone('US/Eastern')
 
 
 def strftime(t: float, fmt: str = '%c') -> str:
+    """Convert float timestamp to date-time string localized to hone_zone
+
+    :param t:       epoch seconds
+    :param fmt:     strftime format string
+    :return:        t formatted as date-time string
+    """
     return datetime.fromtimestamp(t, home_zone).strftime(fmt)
 
 
 def strptime(date_str: str, fmt: str = '%c') -> float:
+    """Convert date-time string, localized to home_zone, to epoch seconds
+
+    :param date_str:    date-time string in hone_zone
+    :param fmt:         format of date_str
+    :return:            epoch seconds
+    """
     return home_zone.localize(datetime.strptime(date_str, fmt)).timestamp()
 
 
@@ -238,8 +250,8 @@ parser.add_argument('--deviations', action='store', type=float, default=None,
     help='Std deviations difference to trigger warning. e.g. 10. Default=None')
 parser.add_argument('--devices', action='append',
     help='one or more devices. Default=clevb-r7.core.oar.net clevs-r5.core.oar.net')
-parser.add_argument('--drops', action='store', type=int, default=20000,
-    help='Email when bytes dropped per sample exceeds this value. Default=5000')
+parser.add_argument('--drops', action='store', type=int, default=50000,
+    help='Email when bytes dropped per sample exceeds this value. Default=50000')
 parser.add_argument('--emails', action='append',
     help='one or more email addresses to receive error messages. Default=user@machineDomain')
 parser.add_argument('--history', action='store_true', default=False,
@@ -354,6 +366,7 @@ while not allEOF:
     allEOF = args.history			    # allEOF iff no service so far has records
     alerts = ''							# Initially no alerts to post
     totBytesDropped = 0					# total bytes dropped in this time window
+    prefix_fmt = '{0} {1:'+f"{max(len(s) for s in args.services)+1}"+'}'
     for service in args.services: 	    # for each service:
         # retrieve a window of the 6 series for that service
         report, errString = getStats(args.devices, args.member, service,
@@ -396,17 +409,17 @@ while not allEOF:
                 alerts += f"{strftime(rec[epoch], fmt)} {service:9} missing"\
                     + f" sample(s) since {strftime(prevMax[service], fmt)}\n"
             prevMax[service] = max(prevMax[service], rec[epoch])
-            prefix = f"{strftime(rec[epoch], fmt)} {service:9}"
+            prefix = prefix_fmt.format(strftime(rec[epoch], fmt), service)
             try:
-                s = ''
+                s = []                  # list of drops
                 # Documented as Burst - Drops, but data matches Drops - Burst
                 for index in (Client2OarDrops, Oar2ClientDrops):
                     drops = rec[index] - rec[Burst]
                     if drops > 0:		# some bytes dropped?
                         totBytesDropped += drops
-                        s += f"{drops:7,} bytes of {csvHeaders[index]}"
+                        s.append(f"{drops:12,d} bytes of {csvHeaders[index]}")
                 if len(s) > 0:			# drop(s) to report?
-                    alerts += prefix + s + '\n'
+                    alerts += prefix + '  '.join(s) + '\n'
                 if args.deviations is not None:  # Discontinuity?
                     for attr in attrs: 	# Predict value and notify
                         c = statChange(service, rec, attr)

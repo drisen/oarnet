@@ -1,5 +1,3 @@
 requests>=2.27
-git+https://github.com/drisen/credentials.git
-git+https://github.com/drisen/cpiapi.git
-git+https://github.com/drisen/loom.git  # required by cpiapi.cpitable
-pytz>=2022.1
+git+https://github.com/drisen/mylib
+pytz>=2022.7

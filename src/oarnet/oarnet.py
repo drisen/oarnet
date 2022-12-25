@@ -20,8 +20,7 @@ import statistics
 import sys
 from time import sleep, time
 from typing import Union
-from credentials import credentials
-import cpiapi
+from mylib import credentials, logErr, printIf
 
 # Column index of each series in a record
 epoch = 0					# time in epoch seconds
@@ -278,8 +277,8 @@ if not args.devices:
 if not args.emails:
     args.emails = ['user@machineDomain']
 print(f"logErr(...) will send email to {args.emails}")
-cpiapi.logErr.logSubject = 'Oarnet statistics'
-cpiapi.logErr.logToAddr = args.emails
+logErr.logSubject = 'Oarnet statistics'
+logErr.logToAddr = args.emails
 if not args.services:
     args.services = ['CONTENT', 'INTERNET', 'I2', 'ONNET']
 for service in args.services:
@@ -298,7 +297,7 @@ if args.sampling == 300 and args.time_frame > 10080:
     sys.exit(1)
 
 try:
-    cred = credentials.credentials(r'gateway.oar.net/stats/api', args.member)
+    cred = credentials(r'gateway.oar.net/stats/api', args.member)
 except KeyError:
     print(f"Failed to obtain credentials for {args.member}")
     sys.exit(1)
@@ -330,7 +329,7 @@ for service in args.services: 		    # for each service
             try:
                 recX = strptime(rec[epoch], '%c')
             except ValueError:
-                cpiapi.logErr(f"Bad date {rec[epoch]} in {file_name} record={rec}. Record ignored.")
+                logErr(f"Bad date {rec[epoch]} in {file_name} record={rec}. Record ignored.")
                 continue
             prevMax[service] = max(prevMax[service], recX)
             if args.deviations is not None and recX > learningStart:  # within N week startup?
@@ -338,17 +337,17 @@ for service in args.services: 		    # for each service
                     statChange(service, rec, attr)  # learn past statistics
         else:							# have read the entire file
             csv_file.close()
-            cpiapi.printIf(args.verbose, f"Maximum date in {file_name} is "
+            printIf(args.verbose, f"Maximum date in {file_name} is "
                     + f"{prevMax[service]}={strftime(prevMax[service], fmt)}")
         # if options.history, the file is left open after the header for later reading
     except FileNotFoundError:
         histFile[service] = None 		# indicate at EOF
-        cpiapi.printIf(args.verbose, f"No existing {file_name} file.",
+        printIf(args.verbose, f"No existing {file_name} file.",
             '' if args.history else 'Creating a new file.')
         try:
             csv_file = open(file_name, 'w', newline='')
         except FileNotFoundError:
-            cpiapi.logErr(f"Could not create new file: {file_name}")
+            logErr(f"Could not create new file: {file_name}")
             sys.exit(1)
         csvWriter = csv.writer(csv_file)
         csvWriter.writerow(csvHeaders) 	# Write header record
@@ -393,7 +392,7 @@ while not allEOF:
                 break					# Yes. First of new records
             i += 1
         recs = recs[i:]					# trim away previously written records
-        cpiapi.printIf(args.verbose, f"{len(recs)} new {service} records from {recsLen}")
+        printIf(args.verbose, f"{len(recs)} new {service} records from {recsLen}")
 
         # test each new record for alert conditions
         if not args.history:			# Writing an output file?
@@ -434,7 +433,7 @@ while not allEOF:
 
     args.time_frame = 1440			    # after 1st, use the minimum window size
     if len(alerts) > 0 and totBytesDropped > args.drops:  # Issues to report?
-        cpiapi.logErr(alerts)
+        logErr(alerts)
     if args.refresh == 0:			    # one poll only?
         break
 for service in args.services: 		    # For each service

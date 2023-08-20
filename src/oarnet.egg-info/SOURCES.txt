@@ -1,7 +1,7 @@
 LICENSE
 README.md
 pyproject.toml
-setup.cfg
+src/oarnet/oarnet.py
 src/oarnet.egg-info/PKG-INFO
 src/oarnet.egg-info/SOURCES.txt
 src/oarnet.egg-info/dependency_links.txt

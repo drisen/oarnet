@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oarnet"
-version = "2.0.4"
+version = "2.0.5"
 authors = [ { name="Dennis Risen", email="dar5@case.edu" }, ]
 description = "Application to real-time poll the OARnet statistics"
 readme = "README.md"
@@ -16,8 +16,8 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: Unix",
               ]
-dependencies = [ "pytz>=2022.7", "requests>=2.27",
-    "mylib@ git+https://github.com/drisen/mylib.git",
+dependencies = [ "pytz", "requests>=2.27",
+    "mylib@ git+https://github.com/drisen/mylib",
 ]
 
 [project.urls]

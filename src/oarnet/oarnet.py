@@ -1,11 +1,13 @@
-#! /usr/bin/python3
+#!/usr/bin/python3
 # coding=utf-8
-# oarnet.py Copyright 2019 Dennis Risen, Case Western Reserve University
+# oarnet.py is Copyright 2019 by Dennis Risen, Case Western Reserve University
 #
 """
 Real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
 a historical record of traffic at each of the selected interfaces.
 Provide alerts of significant dropped traffic via email.
+Note: The gateway.oar.net/stats/api only provides data unless when accessed
+from an oarnet site. Thus, this program must be executed from a campus IP address.
 """
 
 import csv
@@ -172,7 +174,7 @@ def oarNet_stats(devices: list, member: str, service: str, time_frame: int,
                 continue
             try:
                 y = int_or_float(pair['y'])
-            except ValueError:
+            except (ValueError, TypeError):
                 err_s += f'non-numeric "y" {service} value in series[{i}] value={str(pair)[0:100]} dropped.\n'
                 continue
             if x not in result:			# if no sample is started yet for this x ...
@@ -247,7 +249,7 @@ parser.add_argument('--consolidation', action='store', default='avg',
     help='Aggregation function. {avg or max}. Max may be used only with sampling==3600. Default=avg')
 parser.add_argument('--deviations', action='store', type=float, default=None,
     help='Std deviations difference to trigger warning. e.g. 10. Default=None')
-parser.add_argument('--devices', action='append',
+parser.add_argument('--device', action='append',
     help='one or more devices. Default=clevb-r7.core.oar.net clevs-r5.core.oar.net')
 parser.add_argument('--drops', action='store', type=int, default=50000,
     help='Email when bytes dropped per sample exceeds this value. Default=50000')
@@ -272,14 +274,14 @@ parser.add_argument('--verbose', action='count', default=False,
                     help="increase diagnostic messages")
 args = parser.parse_args()
 # validate options values
-if not args.devices:
-    args.devices = ['clevb-r7.core.oar.net', 'clevs-r5.core.oar.net']
+if not args.device:                    # default devices, if no devices specified
+    args.device = ['clevb-r7.core.oar.net', 'clevs-r5.core.oar.net']
 if not args.emails:
     args.emails = ['user@machineDomain']
 print(f"logErr(...) will send email to {args.emails}")
 logErr.logSubject = 'Oarnet statistics'
 logErr.logToAddr = args.emails
-if not args.services:
+if not args.services:                   # default services, if none specified
     args.services = ['CONTENT', 'INTERNET', 'I2', 'ONNET']
 for service in args.services:
     hist[service] = {} 			        # {attr:{'devs':[oldestDev, ..., newestDev],
@@ -289,13 +291,15 @@ for service in args.services:
         # 'txt':[oldestTxt, ..., newestTxt], weekMinute:[oldestVal, ..., newestVal]}
         hist[service][attr]['devs'] = list()  # [oldestDev, ..., newestDev]
         hist[service][attr]['txt'] = list()  # [oldestTxt, ..., newestTxt]
+# verify that the consolidate and sampling combination are supported by API
 if args.consolidation == 'max' and not args.sampling == 3600:
     print(f"--consolidation=max is valid only with --sampling=3600")
     sys.exit(1)
+# verify that the sampling and time_frame combination are supported by API
 if args.sampling == 300 and args.time_frame > 10080:
     print(f"--sampling=300 is valid only when --time_frame is 1440 or 10080")
     sys.exit(1)
-
+# obtain credentials for gateway from the credentials keeper
 try:
     cred = credentials(r'gateway.oar.net/stats/api', args.member)
 except KeyError:
@@ -305,10 +309,17 @@ OARnet_token = cred[1]			# credentials password is the Authorization token
 
 if args.verbose:						# print options summary
     print(f"Retrieving {args.consolidation} values for {args.member}'s "
-          + f"{str(args.devices)} devices.")
+          + f"{str(args.device)} devices.")
     print(f"Data for {str(args.services)} will be retrieved",
         "once." if args.refresh == 0 else f"every {args.refresh} minutes.")
 
+# Ensure that the specified pathname directory exists
+if not os.path.isdir(args.pathname):
+    os.mkdir(args.pathname)
+    print(f"Created missing pathname directory {args.pathname}")
+elif os.path.isfile(args.pathname):
+    print(f"Specified pathname, {args.pathname}, must be a directory")
+    sys.exit(1)
 getStats = file_stats if args.history else oarNet_stats  # input callable
 learningStart = time() - (histLen+1)*7*24*60*60  # time for learning to start
 # initialize prevMax[service] = max(timestamp) from records in pathname/service.csv

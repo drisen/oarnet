@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: oarnet
-Version: 2.0.5
+Version: 2.0.6
 Summary: Application to real-time poll the OARnet statistics
 Author-email: Dennis Risen <dar5@case.edu>
 License:                     GNU GENERAL PUBLIC LICENSE
@@ -637,7 +637,8 @@ License-File: LICENSE
 
 # oarnet Package
 
-**oarnet.py** Application to real-time poll the OARnet statistics from https://gateway.oar.net/stats/api to update
+**oarnet.py** Application to real-time poll the OARnet statistics from
+https://gateway.oar.net/stats/api to update
 a historical record of traffic at each of the selected interfaces. 
 Provide alerts of significant dropped traffic conditions via email.
 

@@ -266,7 +266,7 @@ parser.add_argument('--refresh', action='store', type=int, default=15,
 parser.add_argument('--sampling', action='store', type=int, default=300,
                     choices=[300, 3600],
     help='OARnet sample period in seconds. {300 (allowed only if time_frame<=10080) or 3600}. Default=300')
-parser.add_argument('--service', action='append', dest='services'
+parser.add_argument('--service', action='append', dest='services',
                     choices=['CONTENT', 'INTERNET', 'I2', 'ONNET'],
     help='one or more services to poll. Default= CONTENT INTERNET I2 ONNET')
 parser.add_argument('--time_frame', action='store', type=int, default=10080,

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!python
 # coding=utf-8
 # oarnet.py is Copyright 2019 by Dennis Risen, Case Western Reserve University
 #
@@ -143,6 +143,7 @@ def oarNet_stats(devices: list, member: str, service: str, time_frame: int,
     try:
         results = requests.get(url, headers=headers)
     except requests.RequestException:
+        print(f"{sys.exc_info()[0]} {sys.exc_info()[1]}\n") # *****
         return None, f"{sys.exc_info()[0]} {sys.exc_info()[1]}\n"  # report error
     # parse through the json response
     try:
@@ -159,7 +160,8 @@ def oarNet_stats(devices: list, member: str, service: str, time_frame: int,
     num_series = len(data)				# number of [{x,y},...] series
     # Each [y1, ..., yn] is initialized to [None, ..., None]
     init_val = list(None for i in range(num_series))
-
+    if args.verbose > 1:
+        print(f"retrieved {num_series} series")
     for i in range(num_series):			# for each series ...
         try:
             vals = data[i]['values'] 	# ... in the response, a list
@@ -264,7 +266,7 @@ parser.add_argument('--refresh', action='store', type=int, default=15,
 parser.add_argument('--sampling', action='store', type=int, default=300,
                     choices=[300, 3600],
     help='OARnet sample period in seconds. {300 (allowed only if time_frame<=10080) or 3600}. Default=300')
-parser.add_argument('--services', action='append',
+parser.add_argument('--service', action='append', dest='services'
                     choices=['CONTENT', 'INTERNET', 'I2', 'ONNET'],
     help='one or more services to poll. Default= CONTENT INTERNET I2 ONNET')
 parser.add_argument('--time_frame', action='store', type=int, default=10080,

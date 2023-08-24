@@ -249,11 +249,11 @@ parser.add_argument('--consolidation', action='store', default='avg',
     help='Aggregation function. {avg or max}. Max may be used only with sampling==3600. Default=avg')
 parser.add_argument('--deviations', action='store', type=float, default=None,
     help='Std deviations difference to trigger warning. e.g. 10. Default=None')
-parser.add_argument('--device', action='append', name='devices',
+parser.add_argument('--device', action='append', dest='devices',
     help='one or more devices. Default=clevb-r7.core.oar.net clevs-r5.core.oar.net')
 parser.add_argument('--drops', action='store', type=int, default=50000,
     help='Email when bytes dropped per sample exceeds this value. Default=50000')
-parser.add_argument('--email', action='append', name='emails',
+parser.add_argument('--email', action='append', dest='emails',
     help='one or more email addresses to receive error messages. Default=user@machineDomain')
 parser.add_argument('--history', action='store_true', default=False,
     help='Read and analyse the files at pathname, w/o output to files')

@@ -252,7 +252,7 @@ parser.add_argument('--consolidation', action='store', default='avg',
 parser.add_argument('--deviations', action='store', type=float, default=None,
     help='Std deviations difference to trigger warning. e.g. 10. Default=None')
 parser.add_argument('--device', action='append', dest='devices',
-    help='one or more devices. Default=clevb-r7.core.oar.net clevs-r5.core.oar.net')
+    help='one or more devices. Default=clevb-r7.core.oar.net clevs-r0.core.oar.net')
 parser.add_argument('--drops', action='store', type=int, default=50000,
     help='Email when bytes dropped per sample exceeds this value. Default=50000')
 parser.add_argument('--email', action='append', dest='emails',
@@ -277,7 +277,7 @@ parser.add_argument('--verbose', action='count', default=False,
 args = parser.parse_args()
 # validate options values
 if not args.devices:                    # default devices, if no devices are specified
-    args.devices = ['clevb-r7.core.oar.net', 'clevs-r5.core.oar.net']
+    args.devices = ['clevb-r7.core.oar.net', 'clevs-r0.core.oar.net']
 if not args.emails:
     args.emails = ['user@machineDomain']
 print(f"logErr(...) will send email to {args.emails}")
@@ -374,6 +374,7 @@ allEOF = False
 while not allEOF:
     if args.refresh != 0 and not args.history:  # normal real-time processing?
         t = 60*args.refresh - (time() % (60*args.refresh))  # Yes
+        print(f"sleeping {int(t)} seconds")  # ***
         sleep(max(0.0, t))  			# sleep until refresh multiple
     allEOF = args.history			    # allEOF iff no service so far has records
     alerts = ''							# Initially no alerts to post
